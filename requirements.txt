@@ -1,0 +1,14 @@
+flask
+python-dotenv
+sqlalchemy
+flask-sqlalchemy
+flask-socketio
+alembic
+flask-migrate
+flask-cors
+psycopg2-binary
+awscli
+boto3
+pyjwt
+flask-login
+graphene-sqlalchemy
