@@ -113,12 +113,12 @@ class Expense(db.Model):
     expense_transactions = db.relationship(
         'ExpenseTransactions', backref='expenses')
 
-    def __init__(self, description, amount, id):
+    def __init__(self, description, amount, user_id):
         self.description = description
         self.amount = amount
         self.created_at = datetime.datetime.now()
         self.is_settled = False
-        self.user_id = id
+        self.user_id = user_id
 
 
 class Group(db.Model):

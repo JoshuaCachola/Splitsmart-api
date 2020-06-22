@@ -11,53 +11,26 @@ from .models import (
 class User(SQLAlchemyObjectType):
     class Meta:
         model = UserModel
-        interfaces = (relay.Node, )
-
-
-# class UserFilter(FilterSet):
-#     class Meta:
-#         fields: {
-#             'email': ['eq']
-#         }
-
-
-# class UserFilterableConnectionField(FilterableConnectionField):
-#     filters = {UserModel: UserFilter()}
-
-
-# class UserNode(SQLAlchemyObjectType):
-#     class Meta:
-#         model = UserModel
-#         connection_field_factory = UserFilterableConnectionField.factory
-
-
-# class UserConnection(Connection):
-#     class Meta:
-#         node = UserNode
 
 
 class Expense(SQLAlchemyObjectType):
     class Meta:
         model = ExpenseModel
-        interfaces = (relay.Node, )
 
 
 class Group(SQLAlchemyObjectType):
     class Meta:
         model = GroupModel
-        interfaces = (relay.Node, )
 
 
 class UsersFriend(SQLAlchemyObjectType):
     class Meta:
         model = UsersFriendModel
-        interfaces = (relay.Node, )
 
 
 class Friend(SQLAlchemyObjectType):
     class Meta:
         model = FriendModel
-        interfaces = (relay.Node, )
 
 
 # Mutations
@@ -85,23 +58,6 @@ class CreateUser(graphene.Mutation):
         return CreateUser(
             user=user,
             auth_token=auth_token
-        )
-
-
-class CreateExpense(graphene.Mutation):
-    expense = graphene.Field(lambda: Expense)
-
-    class Arguments:
-        description = graphene.String(required=True)
-        amount = graphene.Float(required=True)
-
-    def mutate(self, info, description, amount):
-        expense = ExpenseModel(description=description, amount=amount)
-        db.session.add(expense)
-        db.session.commit()
-
-        return CreateExpense(
-            expense=expense
         )
 
 
@@ -143,8 +99,8 @@ class CreateGroup(graphene.Mutation):
 
 
 class AddFriend(graphene.Mutation):
-    users_friend = graphene.Field(lambda: UsersFriend)
-    friend = graphene.Field(lambda: Friend)
+    add_friend_success = graphene.Boolean()
+    add_users_friend_success = graphene.Boolean()
 
     class Arguments:
         user_id = graphene.Int(required=True)
@@ -154,6 +110,7 @@ class AddFriend(graphene.Mutation):
         friend = FriendModel(user_id=friend_id)
         db.session.add(friend)
         db.session.commit()
+        add_friend_success = True
 
         users_friend = UsersFriendModel(
             user_id=user_id,
@@ -161,25 +118,46 @@ class AddFriend(graphene.Mutation):
         )
         db.session.add(users_friend)
         db.session.commit()
+        add_users_friend_success = True
+        return AddFriend(
+            add_friend_success=add_friend_success,
+            add_users_friend_success=add_users_friend_success
+        )
 
-        return AddFriend(users_friend=users_friend, friend=friend)
 
+class CreateExpense(graphene.Mutation):
+    expense = graphene.Field(lambda: Expense)
 
-class GetUser(graphene.ObjectType):
-    first_name = graphene.String()
+    class Arguments:
+        user_id = graphene.Int(required=True)
+        amount = graphene.Float(required=True)
+        description = graphene.String(required=True)
+
+    def mutate(self, info, user_id, amount, description):
+        expense = ExpenseModel(
+            user_id=user_id,
+            amount=amount,
+            description=description
+        )
+        db.session.add(expense)
+        db.session.commit()
+        return CreateExpense(expense=expense)
 
 
 class Query(graphene.ObjectType):
-    node = relay.Node.Field()
     # user = graphene.List(User)
     user = graphene.Field(User, email=graphene.String())
+    friends = graphene.List(UsersFriend, user_id=graphene.Int())
     # expense = graphene.Field(Expense, expense_id=graphene.Int())
     # expenses = graphene.Field(Expense, user_id=graphene.Int())
 
     def resolve_user(self, info, email):
-        user = User.get_query(info)
-        return user.filter(UserModel.email == email).first()
+        user_query = User.get_query(info)
+        return user_query.filter(UserModel.email == email).first()
 
+    def resolve_friends(self, info, user_id):
+        friends_query = UsersFriend.get_query(info)
+        return friends_query.filter(UsersFriendModel.user_id == user_id).all()
     # def resolve_expense(self, info, expense_id):
     #     return Expense.query.get(id=expense_id)
 
