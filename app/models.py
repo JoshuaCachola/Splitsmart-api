@@ -1,6 +1,5 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
 import datetime
 import jwt
 import os
@@ -9,23 +8,26 @@ import os
 db = SQLAlchemy()
 
 
-class User(db.Model, UserMixin):
+class User(db.Model):
     """
-    Class for users model
-        - UserMixin allows the usage of is_authenticated in session.py
+    Class for Users Table
     """
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    first_name = db.Column(db.String, nullable=False)
-    last_name = db.Column(db.String, nullable=False)
-    email = db.Column(db.String, unique=True, nullable=False)
-    hashed_pw = db.Column(db.String, nullable=False)
-    avatar = db.Column(db.String)
+    first_name = db.Column(db.String(20), nullable=False)
+    last_name = db.Column(db.String(20), nullable=False)
+    email = db.Column(db.String(50), unique=True, nullable=False)
+    hashed_pw = db.Column(db.String(255), nullable=False)
+    avatar = db.Column(db.String(255))
     registered_on = db.Column(db.DateTime, nullable=False)
-    # friend_id = db.Column(db.Integer, db.ForeignKey('friends.id'))
 
-    # friend = db.relationship('Friend', back_populates='users')
+    friend = db.relationship('Friend', back_populates='user')
+    expense = db.relationship('Expense', back_populates='user')
+    group_users = db.relationship('GroupUsers', backref='users')
+    users_friends = db.relationship('UsersFriend', backref='users')
+    transaction = db.relationship('Transaction', back_populates='user')
+    comment = db.relationship('Comment', back_populates='user')
 
     def __init__(self, first_name, last_name, email, password):
         self.first_name = first_name
@@ -57,8 +59,6 @@ class User(db.Model, UserMixin):
     def decode_auth_token(auth_token):
         """
         Decodes the auth token
-        :param auth_token:
-        :return: integer|string
         """
         try:
             payload = jwt.decode(auth_token,
@@ -70,47 +70,128 @@ class User(db.Model, UserMixin):
         except jwt.InvalidTokenError:
             return 'Invalid token. Please log in again.'
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'first_name': self.first_name,
-            'last_name': self.last_name,
-            'username': self.username,
-            'email': self.email,
-            'hashed_pw': self.hashed_pw
-        }
+
+class Friend(db.Model):
+    """
+    Class for Friends table
+    """
+    __tablename__ = 'friends'
+
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    user = db.relationship('User', back_populates='friend')
+    users_friends = db.relationship('UsersFriend', backref='friends')
 
 
-# class Friend(db.Model):
-#     """
-#     Class for friends model
-#     """
-#     __tablename__ = 'friends'
+class UsersFriend(db.Model):
+    """
+    Class for User and Friends join table
+    """
+    __tablename__ = 'users_friends'
 
-#     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
-#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
-#     users = db.relationship('User', back_populates='friend')
-
-#     def to_dict(self):
-#         return {
-#             'id': self.id,
-#             'user_id': self.user_id
-#         }
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    friend_id = db.Column(db.Integer, db.ForeignKey(
+        'friends.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
 
 
 class Expense(db.Model):
+    """
+    Class for Expenses Table
+    """
     __tablename__ = 'expenses'
 
     id = db.Column(db.Integer, autoincrement=True, primary_key=True)
     amount = db.Column(db.Float, nullable=False)
     description = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False)
+    is_settled = db.Column(db.Boolean, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'amount': self.amount,
-            'description': self.description,
-            'created_at': self.created_at
-        }
+    user = db.relationship('User', back_populates='expense')
+    expense_transactions = db.relationship(
+        'ExpenseTransactions', backref='expenses')
+
+    def __init__(self, description, amount, id):
+        self.description = description
+        self.amount = amount
+        self.created_at = datetime.datetime.now()
+        self.is_settled = False
+        self.user_id = id
+
+
+class Group(db.Model):
+    """
+    Class for Groups Table
+    """
+    __tablename__ = 'groups'
+
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    image = db.Column(db.String(255))
+
+    group_users = db.relationship('GroupUsers', backref='groups')
+
+
+class GroupUsers(db.Model):
+    """
+    Class for Group Users Join Table
+    """
+    __tablename__ = 'group_users'
+
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey(
+        'groups.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+
+class Transaction(db.Model):
+    """
+    Class for Transactions table
+    """
+    __tablename__ = 'transactions'
+
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    amount = db.Column(db.Float, nullable=False)
+    paid_on = db.Column(db.DateTime)
+    is_settled = db.Column(db.Boolean)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    user = db.relationship('User', back_populates='transaction')
+    expense_transactions = db.relationship(
+        'ExpenseTransactions', backref='transactions')
+    comment = db.relationship('Comment', back_populates='transaction')
+
+    def __init__(self, amount, user_id):
+        self.amount = amount
+        self.user_id = user_id
+        self.is_settled = False
+
+
+class ExpenseTransactions(db.Model):
+    """
+    Class for Expense Transactions join table
+    """
+    ___tablename__ = 'expense_transactions'
+
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    expense_id = db.Column(db.Integer, db.ForeignKey('expenses.id'))
+    transaction_id = db.Column(db.Integer, db.ForeignKey('transactions.id'))
+
+
+class Comment(db.Model):
+    """
+    Class for Comment table
+    """
+    __tablename__ = 'comments'
+
+    id = db.Column(db.Integer, autoincrement=True, primary_key=True)
+    comment = db.Column(db.String(255), nullable=False)
+    date = db.Column(db.DateTime, nullable=False)
+    transaction_id = db.Column(db.Integer, db.ForeignKey(
+        'transactions.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    transaction = db.relationship('Transaction', back_populates='comment')
+    user = db.relationship('User', back_populates='comment')

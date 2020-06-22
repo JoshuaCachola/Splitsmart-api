@@ -20,7 +20,7 @@ Flask-Migrate = "*"
 Flask-Cors = "*"
 PyJWT = "*"
 flask-graphql = "*"
-flask-login = "*"
+graphene-sqlalchemy-filter = "*"
 
 [requires]
 python_version = "3.8"

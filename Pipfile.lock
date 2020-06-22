@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "2daf23e3aeb770238a02a0236bb52932e7848e416747a9e9842fd03bcb688c6b"
+            "sha256": "401ba27a4dd51ff239901ca0029ac1a0bd5a7fa4f6b9c9ebbf366fea2c500af2"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -101,14 +101,6 @@
             "index": "pypi",
             "version": "==2.0.1"
         },
-        "flask-login": {
-            "hashes": [
-                "sha256:6d33aef15b5bcead780acc339464aae8a6e28f13c90d8b1cf9de8b549d1c0b4b",
-                "sha256:7451b5001e17837ba58945aead261ba425fdf7b4f0448777e597ddab39f4fba0"
-            ],
-            "index": "pypi",
-            "version": "==0.5.0"
-        },
         "flask-migrate": {
             "hashes": [
                 "sha256:4dc4a5cce8cbbb06b8dc963fd86cf8136bd7d875aabe2d840302ea739b243732",
@@ -147,6 +139,14 @@
             ],
             "index": "pypi",
             "version": "==2.3.0"
+        },
+        "graphene-sqlalchemy-filter": {
+            "hashes": [
+                "sha256:688ce24e6cce1da070f1f6b77866d3bae8564e88a08585b6005e2f4439a1be25",
+                "sha256:cff78b7cca7718777107c8041d0cbae678e8b080742437ff3d71c5974a16613e"
+            ],
+            "index": "pypi",
+            "version": "==1.10.2"
         },
         "graphql-core": {
             "hashes": [
