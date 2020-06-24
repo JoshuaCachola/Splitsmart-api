@@ -3,7 +3,7 @@ from graphene import relay, Connection, Node
 from graphene_sqlalchemy import SQLAlchemyObjectType, SQLAlchemyConnectionField
 from .models import (
     db, User as UserModel, Expense as ExpenseModel, Friendship as FriendshipModel,
-    Transaction as TransactionModel)
+    Transaction as TransactionModel, Comment as CommentModel)
 from .util import token_required
 
 
@@ -31,6 +31,11 @@ class Friendship(SQLAlchemyObjectType):
 class Transaction(SQLAlchemyObjectType):
     class Meta:
         model = TransactionModel
+
+
+class Comment(SQLAlchemyObjectType):
+    class Meta:
+        model = CommentModel
 
 
 # Mutations
@@ -173,25 +178,51 @@ class CreateTransaction(graphene.Mutation):
         return CreateTransaction(transaction=expense_transaction)
 
 
-class AcceptFriendRequest(graphene.Mutation):
-    accepted = graphene.Boolean()
+class HandleFriendRequest(graphene.Mutation):
+    """
+    Mutation class to change the status of a friend request
+    """
+    change_status = graphene.Boolean()
 
     class Arguments:
         friend1_id = graphene.Int(required=True)
         friend2_id = graphene.Int(required=True)
+        status = graphene.String(required=True)
 
-    def mutate(self, info, friend1_id, friend2_id):
+    def mutate(self, info, friend1_id, friend2_id, status):
         # friends are flipped because how the request is represented in table
         friend_request = FriendshipModel.query.filter_by(friend1_id=friend2_id) \
             .filter_by(friend2_id=friend1_id).first()
         if friend_request:
-            friend_request.status = 'accepted'
+            friend_request.status = status
             db.session.commit()
-            accepted = True
-            return AcceptFriendRequest(accepted=accepted)
+            change_status = True
+            return HandleFriendRequest(change_status=change_status)
         else:
-            accepted = False
-            return AcceptFriendRequest(accepted=accepted)
+            change_status = False
+            return HandleFriendRequest(change_status=change_status)
+
+
+class CreateComment(graphene.Mutation):
+    """
+    Mutation class to create a comment on a transaction
+    """
+    comment = graphene.Field(lambda: Comment)
+
+    class Arguments:
+        comment = graphene.String(required=True)
+        transaction_id = graphene.Int(required=True)
+        user_id = graphene.Int(required=True)
+
+    def mutate(self, info, comment, transaction_id, user_id):
+        create_comment = CommentModel(
+            comment=comment,
+            transaction_id=transaction_id,
+            user_id=user_id
+        )
+        db.session.add(create_comment)
+        db.session.commit()
+        return CreateComment(comment=create_comment)
 
 
 class Query(graphene.ObjectType):
@@ -207,9 +238,14 @@ class Query(graphene.ObjectType):
         return user_query.filter(UserModel.email == email).first()
 
     def resolve_friends(self, info, friend1_id):
-        friends_query = Friendship.get_query(info)
-        return friends_query.filter(FriendshipModel.friend1_id == friend1_id) \
+        friends1_query = Friendship.get_query(info)
+        # friends2_query = Friendship.get_query(info)
+        friend1 = friends1_query.filter(FriendshipModel.friend1_id == friend1_id) \
             .filter(FriendshipModel.status == 'accepted')
+        # friend2 = friends2_query.filter(FriendshipModel.friend2_id == friend1_id) \
+        #     .filter(FriendshipModel.status == 'accepted')
+
+        return friend1  # + friend2
 
     # def resolve_expense(self, info, expense_id):
     #     return Expense.query.get(id=expense_id)
@@ -227,7 +263,8 @@ class Mutation(graphene.ObjectType):
     # create_group = CreateGroup.Field()
     friendship_request = FriendshipRequest.Field()
     create_transaction = CreateTransaction.Field()
-    accept_friend_request = AcceptFriendRequest.Field()
+    handle_friend_request = HandleFriendRequest.Field()
+    create_commnet = CreateComment.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
