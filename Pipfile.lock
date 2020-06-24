@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "401ba27a4dd51ff239901ca0029ac1a0bd5a7fa4f6b9c9ebbf366fea2c500af2"
+            "sha256": "2ab3d84db08c266f9e78d3a0b6e98bd44e4fc803a6eca4d484dd3532ed315b14"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -32,26 +32,26 @@
         },
         "awscli": {
             "hashes": [
-                "sha256:820b4e4f34fa1b89115c12c5bce97735db751f568fa4dc8469aed1c907a553a5",
-                "sha256:e2b9b49d8416dabcd1c9cf504cffaf39743ad672ea52a638a8a8d25e4387098d"
+                "sha256:2b46d54dfb2bca9286e46e0d08f0a3aa3c81c99005058feb0e5aecc7d60c5375",
+                "sha256:affbb3734116aba754a9ab112d7ffe200e0cdc6e8214d36a44bd1a69b6e3e092"
             ],
             "index": "pypi",
-            "version": "==1.18.84"
+            "version": "==1.18.85"
         },
         "boto3": {
             "hashes": [
-                "sha256:4856c8cb4150b900cc7dccbdf16f542fb8c12e97b17639979e58760847f7cf35",
-                "sha256:fe6f7f58fa53c4dd86432315717c989a65a5a8748e6219a53725be1041c4a113"
+                "sha256:5130fd17787637e818e7be8b2820e88a5aa441e13335a99b7442f9aead4e3402",
+                "sha256:e831278ada45b984574a533fd427cb08c9c245445ca9a51457a84903d8b09b86"
             ],
             "index": "pypi",
-            "version": "==1.14.7"
+            "version": "==1.14.8"
         },
         "botocore": {
             "hashes": [
-                "sha256:cce790e65368d28dfd715558daea6890922716efa69d3a4c76d80348a71ad460",
-                "sha256:e582e3ba61d812e8dd0939c0455c6f68cf41587506a3a30deafc54825087de01"
+                "sha256:091a2763bb84d47271b05ae05ebc704466ca32df9aabf39e39c3ae99bde9b176",
+                "sha256:b91ce293e3bb1c2cb8c191ec544b80ce8193d0503185fadeae2d429f896c1934"
             ],
-            "version": "==1.17.7"
+            "version": "==1.17.8"
         },
         "click": {
             "hashes": [
@@ -139,14 +139,6 @@
             ],
             "index": "pypi",
             "version": "==2.3.0"
-        },
-        "graphene-sqlalchemy-filter": {
-            "hashes": [
-                "sha256:688ce24e6cce1da070f1f6b77866d3bae8564e88a08585b6005e2f4439a1be25",
-                "sha256:cff78b7cca7718777107c8041d0cbae678e8b080742437ff3d71c5974a16613e"
-            ],
-            "index": "pypi",
-            "version": "==1.10.2"
         },
         "graphql-core": {
             "hashes": [

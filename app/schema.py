@@ -1,10 +1,10 @@
 import graphene
 from graphene import relay, Connection, Node
 from graphene_sqlalchemy import SQLAlchemyObjectType, SQLAlchemyConnectionField
-from graphene_sqlalchemy_filter import FilterableConnectionField, FilterSet
 from .models import (
-    db, User as UserModel, Expense as ExpenseModel, Group as GroupModel,
-    UsersFriend as UsersFriendModel, Friend as FriendModel)
+    db, User as UserModel, Expense as ExpenseModel, Friendship as FriendshipModel,
+    Transaction as TransactionModel)
+from .util import token_required
 
 
 # Schema
@@ -18,23 +18,26 @@ class Expense(SQLAlchemyObjectType):
         model = ExpenseModel
 
 
-class Group(SQLAlchemyObjectType):
+# class Group(SQLAlchemyObjectType):
+#     class Meta:
+#         model = GroupModel
+
+
+class Friendship(SQLAlchemyObjectType):
     class Meta:
-        model = GroupModel
+        model = FriendshipModel
 
 
-class UsersFriend(SQLAlchemyObjectType):
+class Transaction(SQLAlchemyObjectType):
     class Meta:
-        model = UsersFriendModel
-
-
-class Friend(SQLAlchemyObjectType):
-    class Meta:
-        model = FriendModel
+        model = TransactionModel
 
 
 # Mutations
 class CreateUser(graphene.Mutation):
+    """
+    Mutation class for users to sign up
+    """
     auth_token = graphene.String()
     user = graphene.Field(lambda: User)
 
@@ -44,8 +47,7 @@ class CreateUser(graphene.Mutation):
         email = graphene.String(required=True)
         password = graphene.String(required=True)
 
-    def mutate(
-            self, info, first_name, last_name, email, password):
+    def mutate(self, info, first_name, last_name, email, password):
         user = UserModel(
             first_name=first_name,
             last_name=last_name,
@@ -62,6 +64,9 @@ class CreateUser(graphene.Mutation):
 
 
 class LoginUser(graphene.Mutation):
+    """
+    Mutation class to authenticate user and pass frontend JWT token
+    """
     id = graphene.Int()
     auth_token = graphene.String()
 
@@ -73,59 +78,60 @@ class LoginUser(graphene.Mutation):
         user = UserModel.query.filter_by(email=email).first()
         if user and user.check_password(password):
             auth_token = user.encode_auth_token(user.id)
-        return LoginUser(
-            id=user.id,
-            auth_token=auth_token
-        )
+            return LoginUser(
+                id=user.id,
+                auth_token=auth_token
+            )
+        else:
+            return LoginUser(id=None, auth_token=None)
 
 
-class CreateGroup(graphene.Mutation):
-    group = graphene.Field(lambda: Group)
+# class CreateGroup(graphene.Mutation):
+#     group = graphene.Field(lambda: Group)
+
+#     class Arguments:
+#         name = graphene.String(required=True)
+#         image = graphene.String()
+
+#     def mutate(self, info, name, image=None):
+#         group = GroupModel(
+#             name=name,
+#             image=image
+#         )
+#         db.session.add(group)
+#         db.session.commit()
+#         return CreateGroup(
+#             group=group
+#         )
+
+
+class FriendshipRequest(graphene.Mutation):
+    """
+    Mutation class for users to request other users as friends
+    """
+    friendship_status = graphene.String()
 
     class Arguments:
-        name = graphene.String(required=True)
-        image = graphene.String()
+        friend1_id = graphene.Int(required=True)
+        friend2_id = graphene.Int(required=True)
 
-    def mutate(self, info, name, image=None):
-        group = GroupModel(
-            name=name,
-            image=image
+    def mutate(self, info, friend1_id, friend2_id):
+        # add a check to see if a friend request was already made
+        friendship_request = FriendshipModel(
+            friend1_id=friend1_id,
+            friend2_id=friend2_id
         )
-        db.session.add(group)
+        db.session.add(friendship_request)
         db.session.commit()
-        return CreateGroup(
-            group=group
-        )
-
-
-class AddFriend(graphene.Mutation):
-    add_friend_success = graphene.Boolean()
-    add_users_friend_success = graphene.Boolean()
-
-    class Arguments:
-        user_id = graphene.Int(required=True)
-        friend_id = graphene.Int(required=True)
-
-    def mutate(self, info, user_id, friend_id):
-        friend = FriendModel(user_id=friend_id)
-        db.session.add(friend)
-        db.session.commit()
-        add_friend_success = True
-
-        users_friend = UsersFriendModel(
-            user_id=user_id,
-            friend_id=friend.id
-        )
-        db.session.add(users_friend)
-        db.session.commit()
-        add_users_friend_success = True
-        return AddFriend(
-            add_friend_success=add_friend_success,
-            add_users_friend_success=add_users_friend_success
+        return FriendshipRequest(
+            friendship_status=friendship_request.status,
         )
 
 
 class CreateExpense(graphene.Mutation):
+    """
+    Mutation class for users to create expenses
+    """
     expense = graphene.Field(lambda: Expense)
 
     class Arguments:
@@ -144,33 +150,84 @@ class CreateExpense(graphene.Mutation):
         return CreateExpense(expense=expense)
 
 
+class CreateTransaction(graphene.Mutation):
+    """
+    Mutation class for uses to create a transaction from an expense for another
+    user to pay
+    """
+    transaction = graphene.Field(lambda: Transaction)
+
+    class Arguments:
+        expense_id = graphene.Int(required=True)
+        amount = graphene.Float(required=True)
+        user_id = graphene.Int(required=True)
+
+    def mutate(self, info, expense_id, amount, user_id):
+        expense_transaction = TransactionModel(
+            expense_id=expense_id,
+            amount=amount,
+            user_id=user_id
+        )
+        db.session.add(expense_transaction)
+        db.session.commit()
+        return CreateTransaction(transaction=expense_transaction)
+
+
+class AcceptFriendRequest(graphene.Mutation):
+    accepted = graphene.Boolean()
+
+    class Arguments:
+        friend1_id = graphene.Int(required=True)
+        friend2_id = graphene.Int(required=True)
+
+    def mutate(self, info, friend1_id, friend2_id):
+        # friends are flipped because how the request is represented in table
+        friend_request = FriendshipModel.query.filter_by(friend1_id=friend2_id) \
+            .filter_by(friend2_id=friend1_id).first()
+        if friend_request:
+            friend_request.status = 'accepted'
+            db.session.commit()
+            accepted = True
+            return AcceptFriendRequest(accepted=accepted)
+        else:
+            accepted = False
+            return AcceptFriendRequest(accepted=accepted)
+
+
 class Query(graphene.ObjectType):
     # user = graphene.List(User)
     user = graphene.Field(User, email=graphene.String())
-    friends = graphene.List(UsersFriend, user_id=graphene.Int())
+    friends = graphene.List(Friendship, friend1_id=graphene.Int())
     # expense = graphene.Field(Expense, expense_id=graphene.Int())
-    # expenses = graphene.Field(Expense, user_id=graphene.Int())
+    active_expenses = graphene.List(Expense, user_id=graphene.Int())
 
+    # @token_required
     def resolve_user(self, info, email):
         user_query = User.get_query(info)
         return user_query.filter(UserModel.email == email).first()
 
-    def resolve_friends(self, info, user_id):
-        friends_query = UsersFriend.get_query(info)
-        return friends_query.filter(UsersFriendModel.user_id == user_id).all()
+    def resolve_friends(self, info, friend1_id):
+        friends_query = Friendship.get_query(info)
+        return friends_query.filter(FriendshipModel.friend1_id == friend1_id) \
+            .filter(FriendshipModel.status == 'accepted')
+
     # def resolve_expense(self, info, expense_id):
     #     return Expense.query.get(id=expense_id)
 
-    # def resolve_expenses(self, info, user_id):
-    #     return Expense.query.filter_by(user_id=user_id).all()
+    def resolve_active_expenses(self, info, user_id):
+        expenses_query = Expense.get_query(info)
+        return expenses_query.filter(ExpenseModel.user_id == user_id) \
+            .filter(ExpenseModel.is_settled == False)
 
 
 class Mutation(graphene.ObjectType):
     create_user = CreateUser.Field()
     login_user = LoginUser.Field()
     create_expense = CreateExpense.Field()
-    create_group = CreateGroup.Field()
-    add_friend = AddFriend.Field()
+    # create_group = CreateGroup.Field()
+    friendship_request = FriendshipRequest.Field()
+    create_transaction = CreateTransaction.Field()
+    accept_friend_request = AcceptFriendRequest.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

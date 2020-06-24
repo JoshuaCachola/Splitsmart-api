@@ -5,13 +5,12 @@ from flask_cors import CORS
 
 from .config import Config
 from .models import db
-from .schema import schema, User
 
 
 app = Flask(__name__)
+from .schema import schema  # noqa
 app.debug = True
 app.config.from_object(Config)
-
 
 # adds /graphql endpoint
 app.add_url_rule(
