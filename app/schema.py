@@ -237,7 +237,7 @@ class Query(graphene.ObjectType):
     # expense = graphene.Field(Expense, expense_id=graphene.Int())
     active_expenses = graphene.List(Expense, user_id=graphene.Int())
     recent_activity = graphene.List(RecentActivity, user_id=graphene.Int())
-    # @token_required
+    active_transactions = graphene.List(Transaction, user_id=graphene.Int())
 
     def resolve_user(self, info, email):
         user_query = User.get_query(info)
@@ -269,6 +269,10 @@ class Query(graphene.ObjectType):
         )
         comments = comment_query.filter(CommentModel.user_id == user_id)
         return [*transactions, *comments]
+
+    def resolve_active_transactions(self, info, user_id):
+        transaction_query = Transaction.get_query(info)
+        return transaction_query.filter(TransactionModel.user_id == user_id)
 
 
 class Mutation(graphene.ObjectType):
