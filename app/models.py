@@ -113,6 +113,7 @@ class Expense(db.Model):
 
     user = db.relationship('User', back_populates='expense')
     transaction = db.relationship('Transaction', back_populates='expense')
+    comment = db.relationship('Comment', back_populates='expense')
 
     def __init__(self, description, amount, user_id):
         self.description = description
@@ -163,7 +164,6 @@ class Transaction(db.Model):
 
     user = db.relationship('User', back_populates='transaction')
     expense = db.relationship('Expense', back_populates='transaction')
-    comment = db.relationship('Comment', back_populates='transaction')
 
     def __init__(self, amount, user_id, expense_id):
         self.amount = amount
@@ -181,15 +181,15 @@ class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     comment = db.Column(db.String(255), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
-    transaction_id = db.Column(db.Integer, db.ForeignKey(
-        'transactions.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    expense_id = db.Column(db.Integer, db.ForeignKey(
+        'expenses.id'), nullable=False)
 
-    transaction = db.relationship('Transaction', back_populates='comment')
     user = db.relationship('User', back_populates='comment')
+    expense = db.relationship('Expense', back_populates='comment')
 
-    def __init__(self, comment, transaction_id, user_id):
+    def __init__(self, comment, expense_id, user_id):
         self.comment = comment
-        self.transaction_id = transaction_id
+        self.expense_id = expense_id
         self.user_id = user_id
         self.date = datetime.datetime.now()
