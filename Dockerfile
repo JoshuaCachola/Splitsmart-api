@@ -3,4 +3,4 @@ WORKDIR /app
 COPY . /app
 EXPOSE 8080
 RUN pip install -r requirements.txt
-CMD python3 goodfellas.py
+CMD python3 splitsmart.py

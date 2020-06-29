@@ -86,6 +86,7 @@ class Friendship(db.Model):
     friend2_id = db.Column(
         db.Integer, db.ForeignKey('users.id'), nullable=False)
     status = db.Column(db.String, nullable=False)
+    updated_at = db.Column(db.DateTime)
 
     friend1 = db.relationship('User', backref='friendship1',
                               uselist=False, foreign_keys='[Friendship.friend1_id]')
@@ -96,6 +97,7 @@ class Friendship(db.Model):
         self.friend1_id = friend1_id
         self.friend2_id = friend2_id
         self.status = 'pending'
+        self.updated_at = datetime.datetime.now()
 
 
 class Expense(db.Model):
@@ -110,6 +112,7 @@ class Expense(db.Model):
     created_at = db.Column(db.DateTime, nullable=False)
     is_settled = db.Column(db.Boolean, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    updated_at = db.Column(db.DateTime)
 
     user = db.relationship('User', back_populates='expense')
     transaction = db.relationship('Transaction', back_populates='expense')
@@ -121,6 +124,7 @@ class Expense(db.Model):
         self.created_at = datetime.datetime.now()
         self.is_settled = False
         self.user_id = user_id
+        self.updated_at = datetime.datetime.now()
 
 
 # class Group(db.Model):
@@ -161,6 +165,7 @@ class Transaction(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     expense_id = db.Column(db.Integer, db.ForeignKey(
         'expenses.id'), nullable=False)
+    updated_at = db.Column(db.DateTime)
 
     user = db.relationship('User', back_populates='transaction')
     expense = db.relationship('Expense', back_populates='transaction')
@@ -170,6 +175,7 @@ class Transaction(db.Model):
         self.user_id = user_id
         self.expense_id = expense_id
         self.is_settled = False
+        self.updated_at = datetime.datetime.now()
 
 
 class Comment(db.Model):

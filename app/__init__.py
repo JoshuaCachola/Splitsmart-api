@@ -8,6 +8,7 @@ from .models import db
 
 
 app = Flask(__name__)
+cors = CORS(app, resources={r'/*': {'origin': '*'}})
 from .schema import schema  # noqa
 app.debug = True
 app.config.from_object(Config)
@@ -22,7 +23,5 @@ app.add_url_rule(
     )
 )
 
-
-cors = CORS(app, resources={r'/*': {'origin': '*'}})
 db.init_app(app)
 Migrate(app, db)

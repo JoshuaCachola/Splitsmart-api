@@ -5,6 +5,7 @@ from .models import (
     db, User as UserModel, Expense as ExpenseModel, Friendship as FriendshipModel,
     Transaction as TransactionModel, Comment as CommentModel)
 from .util import token_required
+import datetime
 
 
 # Schema
@@ -40,7 +41,7 @@ class Comment(SQLAlchemyObjectType):
 
 class RecentActivity(graphene.Union):
     class Meta:
-        types = (Transaction, Comment, Expense)
+        types = (Transaction, Friendship)
 
 
 # Mutations
@@ -79,6 +80,8 @@ class LoginUser(graphene.Mutation):
     """
     id = graphene.Int()
     auth_token = graphene.String()
+    first_name = graphene.String()
+    last_name = graphene.String()
 
     class Arguments:
         email = graphene.String(required=True)
@@ -90,10 +93,17 @@ class LoginUser(graphene.Mutation):
             auth_token = user.encode_auth_token(user.id)
             return LoginUser(
                 id=user.id,
-                auth_token=auth_token
+                auth_token=auth_token,
+                first_name=user.first_name,
+                last_name=user.last_name
             )
         else:
-            return LoginUser(id=None, auth_token=None)
+            return LoginUser(
+                id=None,
+                auth_token=None,
+                first_name=None,
+                last_name=None,
+            )
 
 
 # class CreateGroup(graphene.Mutation):
@@ -187,25 +197,18 @@ class HandleFriendRequest(graphene.Mutation):
     """
     Mutation class to change the status of a friend request
     """
-    change_status = graphene.Boolean()
+    friend_request = graphene.Field(lambda: Friendship)
 
     class Arguments:
-        friend1_id = graphene.Int(required=True)
-        friend2_id = graphene.Int(required=True)
+        id = graphene.Int(required=True)
         status = graphene.String(required=True)
 
-    def mutate(self, info, friend1_id, friend2_id, status):
-        # friends are flipped because how the request is represented in table
-        friend_request = FriendshipModel.query.filter_by(friend1_id=friend2_id) \
-            .filter_by(friend2_id=friend1_id).first()
-        if friend_request:
-            friend_request.status = status
-            db.session.commit()
-            change_status = True
-            return HandleFriendRequest(change_status=change_status)
-        else:
-            change_status = False
-            return HandleFriendRequest(change_status=change_status)
+    def mutate(self, info, id, status):
+        friend_request = FriendshipModel.query.filter_by(id=id).first()
+        friend_request.status = status
+        friend_request.updated_at = datetime.datetime.now()
+        db.session.commit()
+        return HandleFriendRequest(friend_request=friend_request)
 
 
 class CreateComment(graphene.Mutation):
@@ -230,18 +233,42 @@ class CreateComment(graphene.Mutation):
         return CreateComment(comment=create_comment)
 
 
+class HandleTransaction(graphene.Mutation):
+    """
+    Mutation class to handle paying a transaction
+    """
+    transaction = graphene.Field(lambda: Transaction)
+
+    class Arguments:
+        id = graphene.Int(required=True)
+
+    def mutate(self, info, id):
+        transaction = TransactionModel.query.filter_by(id=id).first()
+        transaction.paid_on = datetime.datetime.now()
+        transaction.updated_at = datetime.datetime.now()
+        transaction.is_settled = True
+        db.session.commit()
+        return HandleTransaction(transaction=transaction)
+
+
 class Query(graphene.ObjectType):
-    # user = graphene.List(User)
     user = graphene.Field(User, email=graphene.String())
     get_friends = graphene.List(Friendship, friend_id=graphene.Int())
-    # expense = graphene.Field(Expense, expense_id=graphene.Int())
     active_expenses = graphene.List(Expense, user_id=graphene.Int())
     recent_activity = graphene.List(RecentActivity, user_id=graphene.Int())
     active_transactions = graphene.List(Transaction, user_id=graphene.Int())
+    get_expense_comments = graphene.List(
+        Comment, expense_id=graphene.Int())
+    get_expense_transactions = graphene.List(
+        Transaction, expense_id=graphene.Int())
 
     def resolve_user(self, info, email):
         user_query = User.get_query(info)
-        return user_query.filter(UserModel.email == email).first()
+        user = user_query.filter(UserModel.email == email).first()
+        if user:
+            return user
+        else:
+            return None
 
     def resolve_get_friends(self, info, friend_id):
         friends1_query = Friendship.get_query(info)
@@ -250,10 +277,8 @@ class Query(graphene.ObjectType):
             .filter(FriendshipModel.status == 'accepted')
         friend2 = friends2_query.filter(FriendshipModel.friend2_id == friend_id) \
             .filter(FriendshipModel.status == 'accepted')
-        return [*friend1, *friend2]
 
-    # def resolve_expense(self, info, expense_id):
-    #     return Expense.query.get(id=expense_id)
+        return [*friend1, *friend2]
 
     def resolve_active_expenses(self, info, user_id):
         expenses_query = Expense.get_query(info)
@@ -262,17 +287,29 @@ class Query(graphene.ObjectType):
 
     def resolve_recent_activity(self, info, user_id):
         transaction_query = Transaction.get_query(info)
-        comment_query = Comment.get_query(info)
+        friendship1_query = Friendship.get_query(info)
+        friendship2_query = Friendship.get_query(info)
 
         transactions = transaction_query.filter(
             TransactionModel.user_id == user_id
         )
-        comments = comment_query.filter(CommentModel.user_id == user_id)
-        return [*transactions, *comments]
+        friends1 = friendship1_query.filter(
+            FriendshipModel.friend1_id == user_id)
+        friends2 = friendship2_query.filter(
+            FriendshipModel.friend2_id == user_id)
+        return [*transactions, *friends1, *friends2]
 
     def resolve_active_transactions(self, info, user_id):
         transaction_query = Transaction.get_query(info)
         return transaction_query.filter(TransactionModel.user_id == user_id)
+
+    def resolve_get_expense_comments(self, info, expense_id):
+        comment_query = Comment.get_query(info)
+        return comment_query.filter(CommentModel.expense_id == expense_id)
+
+    def resolve_get_expense_transactions(self, info, expense_id):
+        transaction_query = Transaction.get_query(info)
+        return transaction_query.filter(TransactionModel.expense_id == expense_id)
 
 
 class Mutation(graphene.ObjectType):
@@ -284,6 +321,7 @@ class Mutation(graphene.ObjectType):
     create_transaction = CreateTransaction.Field()
     handle_friend_request = HandleFriendRequest.Field()
     create_comment = CreateComment.Field()
+    handle_transaction = HandleTransaction.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
