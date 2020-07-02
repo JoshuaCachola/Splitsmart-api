@@ -19,6 +19,9 @@ Flask-Migrate = "*"
 Flask-Cors = "*"
 PyJWT = "*"
 flask-graphql = "*"
+flask-jwt-extended = "*"
+flask-graphql-auth = "*"
+flask-login = "*"
 
 [requires]
 python_version = "3.8"

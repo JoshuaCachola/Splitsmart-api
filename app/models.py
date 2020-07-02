@@ -37,6 +37,11 @@ class User(db.Model):
         self.hashed_pw = generate_password_hash(password, 'sha256')
         self.registered_on = datetime.datetime.now()
 
+    def to_dict(self):
+        return {
+            'id': self.id
+        }
+
     def check_password(self, password):
         return check_password_hash(self.hashed_pw, password)
 
@@ -46,7 +51,7 @@ class User(db.Model):
         """
         try:
             payload = {'exp': datetime.datetime.utcnow() + datetime.timedelta(
-                days=0, seconds=5),
+                days=1, seconds=0),
                 'iat': datetime.datetime.utcnow(),
                 'sub': user_id
             }

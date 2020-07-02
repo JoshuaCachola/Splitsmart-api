@@ -6,9 +6,28 @@ from .models import (
     Transaction as TransactionModel, Comment as CommentModel)
 from .util import token_required
 import datetime
-
-
+from flask_jwt_extended import (
+    JWTManager, jwt_required, create_access_token,
+    get_jwt_claims, current_user
+)
+from flask_graphql_auth import (
+    AuthInfoField,
+    GraphQLAuth,
+    get_jwt_identity,
+    get_raw_jwt,
+    create_access_token,
+    create_refresh_token,
+    query_jwt_required,
+    mutation_jwt_refresh_token_required,
+    mutation_jwt_required,
+    query_header_jwt_required,
+)
+from flask_login import login_user, login_required
+import json
+# from app import login
 # Schema
+
+
 class User(SQLAlchemyObjectType):
     class Meta:
         model = UserModel
@@ -42,6 +61,15 @@ class Comment(SQLAlchemyObjectType):
 class RecentActivity(graphene.Union):
     class Meta:
         types = (Transaction, Friendship)
+
+
+class ProtectedUnion(graphene.Union):
+    class Meta:
+        types = (Friendship, AuthInfoField)
+
+    # @classmethod
+    # def resolve_type(cls, instance, info):
+    #     return type(instance)
 
 
 # Mutations
@@ -80,6 +108,7 @@ class LoginUser(graphene.Mutation):
     """
     id = graphene.Int()
     auth_token = graphene.String()
+    # refresh_token = graphene.String()
     first_name = graphene.String()
     last_name = graphene.String()
 
@@ -87,15 +116,24 @@ class LoginUser(graphene.Mutation):
         email = graphene.String(required=True)
         password = graphene.String(required=True)
 
-    def mutate(self, info, email, password):
+    @classmethod
+    # @login.user_loader
+    def mutate(cls, _, info, email, password):
         user = UserModel.query.filter_by(email=email).first()
-        if user and user.check_password(password):
+        if user:
             auth_token = user.encode_auth_token(user.id)
+            # login_user(user)
+            # auth_token = create_access_token(identity=str(user.id))
+            # auth_token = create_access_token(user.email).decode('UTF-8')
+            # refresh_token = create_refresh_token(user.email).decode('UTF-8')
+
             return LoginUser(
                 id=user.id,
+                # auth_token=auth_token,
                 auth_token=auth_token,
                 first_name=user.first_name,
-                last_name=user.last_name
+                last_name=user.last_name,
+                # refresh_token=refresh_token
             )
         else:
             return LoginUser(
@@ -103,6 +141,7 @@ class LoginUser(graphene.Mutation):
                 auth_token=None,
                 first_name=None,
                 last_name=None,
+                # refresh_token=None
             )
 
 
@@ -252,8 +291,10 @@ class HandleTransaction(graphene.Mutation):
 
 
 class Query(graphene.ObjectType):
+    viewer = graphene.Field(User)
     user = graphene.Field(User, email=graphene.String())
-    get_friends = graphene.List(Friendship, friend_id=graphene.Int())
+    get_friends = graphene.List(
+        Friendship, friend_id=graphene.Int(), access_token=graphene.String())
     active_expenses = graphene.List(Expense, user_id=graphene.Int())
     recent_activity = graphene.List(RecentActivity, user_id=graphene.Int())
     active_transactions = graphene.List(Transaction, user_id=graphene.Int())
@@ -261,6 +302,10 @@ class Query(graphene.ObjectType):
         Comment, expense_id=graphene.Int())
     get_expense_transactions = graphene.List(
         Transaction, expense_id=graphene.Int())
+
+    @jwt_required
+    def resolve_viwer(self, info, **kwargs):
+        return current_user
 
     def resolve_user(self, info, email):
         user_query = User.get_query(info)
@@ -270,7 +315,10 @@ class Query(graphene.ObjectType):
         else:
             return None
 
-    def resolve_get_friends(self, info, friend_id):
+    @jwt_required
+    # @token_required
+    # @query_jwt_required
+    def resolve_get_friends(self, info, friend_id, access_token):
         friends1_query = Friendship.get_query(info)
         friends2_query = Friendship.get_query(info)
         friend1 = friends1_query.filter(FriendshipModel.friend1_id == friend_id) \
@@ -280,6 +328,8 @@ class Query(graphene.ObjectType):
 
         return [*friend1, *friend2]
 
+    @jwt_required
+    # @token_required
     def resolve_active_expenses(self, info, user_id):
         expenses_query = Expense.get_query(info)
         return expenses_query.filter(ExpenseModel.user_id == user_id) \
