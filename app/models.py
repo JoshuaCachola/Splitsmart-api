@@ -1,4 +1,3 @@
-from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 import datetime
 import jwt
@@ -21,11 +20,6 @@ class User(db.Model):
     hashed_pw = db.Column(db.String(255), nullable=False)
     avatar = db.Column(db.String(255))
     registered_on = db.Column(db.DateTime, nullable=False)
-
-    # friendship1 = db.relationship('User', secondary='friendships',
-    #                               foreign_keys='[Friendship.friend1_id]')
-    # friendship2 = db.relationship('User', secondary='friendships',
-    #                               foreign_keys='[Friendship.friend2_id]')
     expense = db.relationship('Expense', back_populates='user')
     transaction = db.relationship('Transaction', back_populates='user')
     comment = db.relationship('Comment', back_populates='user')
@@ -45,36 +39,36 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.hashed_pw, password)
 
-    def encode_auth_token(self, user_id):
-        """
-        Generates JWT Token
-        """
-        try:
-            payload = {'exp': datetime.datetime.utcnow() + datetime.timedelta(
-                days=1, seconds=0),
-                'iat': datetime.datetime.utcnow(),
-                'sub': user_id
-            }
-            return jwt.encode(payload,
-                              os.environ.get('SECRET_KEY'),
-                              algorithm='HS256').decode('UTF-8')
-        except Exception as e:
-            return e
+    # def encode_auth_token(self, user_id):
+    #     """
+    #     Generates JWT Token
+    #     """
+    #     try:
+    #         payload = {'exp': datetime.datetime.utcnow() + datetime.timedelta(
+    #             days=1, seconds=0),
+    #             'iat': datetime.datetime.utcnow(),
+    #             'sub': user_id
+    #         }
+    #         return jwt.encode(payload,
+    #                           os.environ.get('SECRET_KEY'),
+    #                           algorithm='HS256').decode('UTF-8')
+    #     except Exception as e:
+    #         return e
 
-    @staticmethod
-    def decode_auth_token(auth_token):
-        """
-        Decodes the auth token
-        """
-        try:
-            payload = jwt.decode(auth_token,
-                                 app.config.get('SECRET_KEY'),
-                                 algorithm='HS256')
-            return payload['sub']
-        except jwt.ExpiredSignatureError:
-            return 'Signature expired. Please log in again.'
-        except jwt.InvalidTokenError:
-            return 'Invalid token. Please log in again.'
+    # @staticmethod
+    # def decode_auth_token(auth_token):
+    #     """
+    #     Decodes the auth token
+    #     """
+    #     try:
+    #         payload = jwt.decode(auth_token,
+    #                              app.config.get('SECRET_KEY'),
+    #                              algorithm='HS256')
+    #         return payload['sub']
+    #     except jwt.ExpiredSignatureError:
+    #         return 'Signature expired. Please log in again.'
+    #     except jwt.InvalidTokenError:
+    #         return 'Invalid token. Please log in again.'
 
 
 class Friendship(db.Model):

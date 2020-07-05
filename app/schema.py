@@ -4,30 +4,11 @@ from graphene_sqlalchemy import SQLAlchemyObjectType, SQLAlchemyConnectionField
 from .models import (
     db, User as UserModel, Expense as ExpenseModel, Friendship as FriendshipModel,
     Transaction as TransactionModel, Comment as CommentModel)
-from .util import token_required
+from flask_jwt_extended import create_access_token, jwt_required
 import datetime
-from flask_jwt_extended import (
-    JWTManager, jwt_required, create_access_token,
-    get_jwt_claims, current_user
-)
-from flask_graphql_auth import (
-    AuthInfoField,
-    GraphQLAuth,
-    get_jwt_identity,
-    get_raw_jwt,
-    create_access_token,
-    create_refresh_token,
-    query_jwt_required,
-    mutation_jwt_refresh_token_required,
-    mutation_jwt_required,
-    query_header_jwt_required,
-)
-from flask_login import login_user, login_required
-import json
-# from app import login
+
+
 # Schema
-
-
 class User(SQLAlchemyObjectType):
     class Meta:
         model = UserModel
@@ -63,15 +44,6 @@ class RecentActivity(graphene.Union):
         types = (Transaction, Friendship)
 
 
-class ProtectedUnion(graphene.Union):
-    class Meta:
-        types = (Friendship, AuthInfoField)
-
-    # @classmethod
-    # def resolve_type(cls, instance, info):
-    #     return type(instance)
-
-
 # Mutations
 class CreateUser(graphene.Mutation):
     """
@@ -87,6 +59,13 @@ class CreateUser(graphene.Mutation):
         password = graphene.String(required=True)
 
     def mutate(self, info, first_name, last_name, email, password):
+        """
+        :type first_name: string
+        :type last_name: string
+        :type email: string
+        :type password: string
+        :rtype: object
+        """
         user = UserModel(
             first_name=first_name,
             last_name=last_name,
@@ -95,7 +74,7 @@ class CreateUser(graphene.Mutation):
         )
         db.session.add(user)
         db.session.commit()
-        auth_token = user.encode_auth_token(user.id)
+        auth_token = create_access_token(user.id)
         return CreateUser(
             user=user,
             auth_token=auth_token
@@ -116,20 +95,19 @@ class LoginUser(graphene.Mutation):
         email = graphene.String(required=True)
         password = graphene.String(required=True)
 
-    @classmethod
+    # @classmethod
     # @login.user_loader
-    def mutate(cls, _, info, email, password):
+    def mutate(self, info, email, password):
+        """
+        :type email: string
+        :type password: string
+        :rtype: object
+        """
         user = UserModel.query.filter_by(email=email).first()
         if user:
-            auth_token = user.encode_auth_token(user.id)
-            # login_user(user)
-            # auth_token = create_access_token(identity=str(user.id))
-            # auth_token = create_access_token(user.email).decode('UTF-8')
-            # refresh_token = create_refresh_token(user.email).decode('UTF-8')
-
+            auth_token = create_access_token(user.id)
             return LoginUser(
                 id=user.id,
-                # auth_token=auth_token,
                 auth_token=auth_token,
                 first_name=user.first_name,
                 last_name=user.last_name,
@@ -174,8 +152,13 @@ class FriendshipRequest(graphene.Mutation):
         friend1_id = graphene.Int(required=True)
         friend2_id = graphene.Int(required=True)
 
+    @jwt_required
     def mutate(self, info, friend1_id, friend2_id):
-        # add a check to see if a friend request was already made
+        """
+        :type friend1_id: int
+        :type friend1_id: int
+        :rtype: obj
+        """
         friendship_request = FriendshipModel(
             friend1_id=friend1_id,
             friend2_id=friend2_id
@@ -198,7 +181,14 @@ class CreateExpense(graphene.Mutation):
         amount = graphene.Float(required=True)
         description = graphene.String(required=True)
 
+    @jwt_required
     def mutate(self, info, user_id, amount, description):
+        """
+        :type user_id: int
+        :type amount: float
+        :type description: string
+        :rtype: obj
+        """
         expense = ExpenseModel(
             user_id=user_id,
             amount=amount,
@@ -221,7 +211,14 @@ class CreateTransaction(graphene.Mutation):
         amount = graphene.Float(required=True)
         user_id = graphene.Int(required=True)
 
+    @jwt_required
     def mutate(self, info, expense_id, amount, user_id):
+        """
+        :type expense_id: int
+        :type amount: float
+        :type user_id: int
+        :rtype: obj
+        """
         expense_transaction = TransactionModel(
             expense_id=expense_id,
             amount=amount,
@@ -242,7 +239,13 @@ class HandleFriendRequest(graphene.Mutation):
         id = graphene.Int(required=True)
         status = graphene.String(required=True)
 
+    @jwt_required
     def mutate(self, info, id, status):
+        """
+        :type id: int
+        :type status: string
+        :rtype: obj
+        """
         friend_request = FriendshipModel.query.filter_by(id=id).first()
         friend_request.status = status
         friend_request.updated_at = datetime.datetime.now()
@@ -261,7 +264,14 @@ class CreateComment(graphene.Mutation):
         expense_id = graphene.Int(required=True)
         user_id = graphene.Int(required=True)
 
+    @jwt_required
     def mutate(self, info, comment, expense_id, user_id):
+        """
+        :type comment: string
+        :type expense_id: int
+        :type user_id: int
+        :rtype: obj
+        """
         create_comment = CommentModel(
             comment=comment,
             expense_id=expense_id,
@@ -281,7 +291,12 @@ class HandleTransaction(graphene.Mutation):
     class Arguments:
         id = graphene.Int(required=True)
 
+    @jwt_required
     def mutate(self, info, id):
+        """
+        :type id: int
+        :rtype: obj
+        """
         transaction = TransactionModel.query.filter_by(id=id).first()
         transaction.paid_on = datetime.datetime.now()
         transaction.updated_at = datetime.datetime.now()
@@ -291,10 +306,9 @@ class HandleTransaction(graphene.Mutation):
 
 
 class Query(graphene.ObjectType):
-    viewer = graphene.Field(User)
     user = graphene.Field(User, email=graphene.String())
     get_friends = graphene.List(
-        Friendship, friend_id=graphene.Int(), access_token=graphene.String())
+        Friendship, friend_id=graphene.Int())
     active_expenses = graphene.List(Expense, user_id=graphene.Int())
     recent_activity = graphene.List(RecentActivity, user_id=graphene.Int())
     active_transactions = graphene.List(Transaction, user_id=graphene.Int())
@@ -302,10 +316,6 @@ class Query(graphene.ObjectType):
         Comment, expense_id=graphene.Int())
     get_expense_transactions = graphene.List(
         Transaction, expense_id=graphene.Int())
-
-    @jwt_required
-    def resolve_viwer(self, info, **kwargs):
-        return current_user
 
     def resolve_user(self, info, email):
         user_query = User.get_query(info)
@@ -316,9 +326,7 @@ class Query(graphene.ObjectType):
             return None
 
     @jwt_required
-    # @token_required
-    # @query_jwt_required
-    def resolve_get_friends(self, info, friend_id, access_token):
+    def resolve_get_friends(self, info, friend_id):
         friends1_query = Friendship.get_query(info)
         friends2_query = Friendship.get_query(info)
         friend1 = friends1_query.filter(FriendshipModel.friend1_id == friend_id) \
@@ -329,12 +337,12 @@ class Query(graphene.ObjectType):
         return [*friend1, *friend2]
 
     @jwt_required
-    # @token_required
     def resolve_active_expenses(self, info, user_id):
         expenses_query = Expense.get_query(info)
         return expenses_query.filter(ExpenseModel.user_id == user_id) \
             .filter(ExpenseModel.is_settled == False)
 
+    @jwt_required
     def resolve_recent_activity(self, info, user_id):
         transaction_query = Transaction.get_query(info)
         friendship1_query = Friendship.get_query(info)
@@ -349,14 +357,17 @@ class Query(graphene.ObjectType):
             FriendshipModel.friend2_id == user_id)
         return [*transactions, *friends1, *friends2]
 
+    @jwt_required
     def resolve_active_transactions(self, info, user_id):
         transaction_query = Transaction.get_query(info)
         return transaction_query.filter(TransactionModel.user_id == user_id)
 
+    @jwt_required
     def resolve_get_expense_comments(self, info, expense_id):
         comment_query = Comment.get_query(info)
         return comment_query.filter(CommentModel.expense_id == expense_id)
 
+    @jwt_required
     def resolve_get_expense_transactions(self, info, expense_id):
         transaction_query = Transaction.get_query(info)
         return transaction_query.filter(TransactionModel.expense_id == expense_id)
