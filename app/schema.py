@@ -1,6 +1,5 @@
 import graphene
-from graphene import relay, Connection, Node
-from graphene_sqlalchemy import SQLAlchemyObjectType, SQLAlchemyConnectionField
+from graphene_sqlalchemy import SQLAlchemyObjectType
 from .models import (
     db, User as UserModel, Expense as ExpenseModel, Friendship as FriendshipModel,
     Transaction as TransactionModel, Comment as CommentModel)
