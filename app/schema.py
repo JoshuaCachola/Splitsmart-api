@@ -11,6 +11,7 @@ import datetime
 class User(SQLAlchemyObjectType):
     class Meta:
         model = UserModel
+        # interfaces = (relay.Node, )
 
 
 class Expense(SQLAlchemyObjectType):
@@ -315,6 +316,7 @@ class Query(graphene.ObjectType):
         Comment, expense_id=graphene.Int())
     get_expense_transactions = graphene.List(
         Transaction, expense_id=graphene.Int())
+    get_all_users = graphene.List(User)
 
     def resolve_user(self, info, email):
         user_query = User.get_query(info)
@@ -370,6 +372,11 @@ class Query(graphene.ObjectType):
     def resolve_get_expense_transactions(self, info, expense_id):
         transaction_query = Transaction.get_query(info)
         return transaction_query.filter(TransactionModel.expense_id == expense_id)
+
+    @jwt_required
+    def resolve_get_all_users(self, info, **kwargs):
+        users_query = User.get_query(info)
+        return users_query.all()
 
 
 class Mutation(graphene.ObjectType):

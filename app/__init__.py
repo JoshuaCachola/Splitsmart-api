@@ -14,15 +14,14 @@ app = Flask(__name__)
 app.config.from_object(Config)
 app.config['JWT_SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['JWT_IDENTITY_CLAIM'] = 'jti'
-jwt = JWTManager(app)
 cors = CORS(app, resources={r'/*': {'origin': '*'}})
+jwt = JWTManager(app)
 app.debug = True
 
 # adds /graphql endpoint
 app.add_url_rule(
     '/graphql',
-    view_func=GraphQLView.as_view('graphql', schema=schema,
-                                  context={'session': db.session}, graphiql=True)
+    view_func=GraphQLView.as_view('graphql', schema=schema, graphiql=True)
 
 )
 

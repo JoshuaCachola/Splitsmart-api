@@ -11,3 +11,4 @@ Flask-Migrate
 Flask-Cors
 PyJWT
 flask-graphql
+flask-jwt-extended
