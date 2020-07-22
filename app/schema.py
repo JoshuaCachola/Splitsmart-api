@@ -66,19 +66,26 @@ class CreateUser(graphene.Mutation):
         :type password: string
         :rtype: object
         """
-        user = UserModel(
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            password=password
-        )
-        db.session.add(user)
-        db.session.commit()
-        auth_token = create_access_token(user.id)
-        return CreateUser(
-            user=user,
-            auth_token=auth_token
-        )
+        check_email = UserModel.query.filter_by(email=email).first()
+        if (not check_email):
+            user = UserModel(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                password=password
+            )
+            db.session.add(user)
+            db.session.commit()
+            auth_token = create_access_token(user.id)
+            return CreateUser(
+                user=user,
+                auth_token=auth_token
+            )
+        else:
+            return CreateUser(
+                user=None,
+                auth_token=None
+            )
 
 
 class LoginUser(graphene.Mutation):
