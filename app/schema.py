@@ -368,7 +368,8 @@ class Query(graphene.ObjectType):
     @jwt_required
     def resolve_active_transactions(self, info, user_id):
         transaction_query = Transaction.get_query(info)
-        return transaction_query.filter(TransactionModel.user_id == user_id)
+        return transaction_query.filter(TransactionModel.user_id == user_id) \
+                                .order_by(TransactionModel.updated_at.desc())
 
     @jwt_required
     def resolve_get_expense_comments(self, info, expense_id):
