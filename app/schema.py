@@ -324,6 +324,8 @@ class Query(graphene.ObjectType):
     get_expense_transactions = graphene.List(
         Transaction, expense_id=graphene.Int())
     get_all_users = graphene.List(User)
+    get_all_unpaid_transactions = graphene.List(
+        Transaction, user_id=graphene.Int())
 
     def resolve_user(self, info, email):
         user_query = User.get_query(info)
@@ -385,6 +387,12 @@ class Query(graphene.ObjectType):
     def resolve_get_all_users(self, info, **kwargs):
         users_query = User.get_query(info)
         return users_query.all()
+
+    @jwt_required
+    def resolve_get_all_unpaid_transactions(self, info, user_id):
+        transactions_query = Transaction.get_query(info)
+        return transactions_query.filter(TransactionModel.user_id == user_id) \
+            .filter(TransactionModel.is_settled == False)
 
 
 class Mutation(graphene.ObjectType):
