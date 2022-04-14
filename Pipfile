@@ -18,8 +18,8 @@ Flask-SQLAlchemy = "*"
 Flask-Migrate = "*"
 Flask-Cors = "*"
 PyJWT = "*"
-flask-graphql = "*"
-flask-jwt-extended = "*"
+Flask-GraphQL = "*"
+Flask-JWT-Extended = "*"
 
 [requires]
 python_version = "3.8"

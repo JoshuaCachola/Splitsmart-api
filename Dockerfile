@@ -1,6 +1,28 @@
-FROM python:3.8.2
-WORKDIR /app
-COPY . /app
-EXPOSE 8080
+# pull python image for container
+FROM python:3.10.1-slim-buster
+
+# set directory for application
+WORKDIR /usr/src/app
+
+# set environmental variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# install dependencies
+RUN apt-get update \
+    && apt-get -y netcat gcc postgresql \
+    && apt-get clean
+
+# copy and install dependencies
+COPY . /requirements.txt
 RUN pip install -r requirements.txt
-CMD python3 splitsmart.py
+
+# copy app to pwd
+COPY . .
+
+# copy entrypoint.sh
+COPY ./entrypoint.sh .
+
+# add execuatable to entrypoint.sh
+RUN chmod +x /usr/src/app/entrypoint.sh
+

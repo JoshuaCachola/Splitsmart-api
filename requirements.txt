@@ -3,12 +3,13 @@ alembic
 psycopg2-binary
 awscli
 boto3
-graphene-sqlalchemy
+graphene-sqlalchemy==2.3.0
+graphene==2.1.9
 Flask
 SQLAlchemy
 Flask-SQLAlchemy
 Flask-Migrate
 Flask-Cors
 PyJWT
-flask-graphql
+flask-graphql==2.0.1
 flask-jwt-extended
