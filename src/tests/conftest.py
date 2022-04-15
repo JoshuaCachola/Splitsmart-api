@@ -3,7 +3,7 @@ import pytest
 from src import create_app, db
 
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def test_app():
     # create instance from app factory
     app = create_app()
@@ -14,7 +14,7 @@ def test_app():
         yield app # testing happens here
 
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def test_client():
     db.create_all()
     yield db # testing happens here
@@ -24,7 +24,7 @@ def test_client():
     db.drop_all()
 
 
-@pytest.fixture('module')
+@pytest.fixture(scope='module')
 def client(test_app):
     return test_app.test_client()
     

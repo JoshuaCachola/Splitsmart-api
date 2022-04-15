@@ -1,10 +1,8 @@
 python-dotenv
-alembic
 psycopg2-binary
 graphene-sqlalchemy==2.3.0
 graphene==2.1.9
 Flask
-SQLAlchemy
 Flask-SQLAlchemy
 Flask-Migrate
 Flask-Cors

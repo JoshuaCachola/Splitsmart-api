@@ -1,4 +1,4 @@
-from ..util_func import json, response_json
+from ..util_func import response_json
 
 
 def test_ping(client):

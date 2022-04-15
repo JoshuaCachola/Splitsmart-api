@@ -8,8 +8,8 @@ services:
       context: .
       dockerfile: Dockerfile
     entrypoint: ['/usr/src/app/entrypoint.sh']
-    depends_on:
-      - api-db
+    #volumes:
+      #- '.:/usr/src/app'
     ports:
       - 5004:5000
     environment:
@@ -17,6 +17,8 @@ services:
       - APP_SETTINGS=src.config.DevelopmentConfig
       - DATABASE_URL=postgresql://postgres:postgres@api-db:5432/api_dev
       - DATABASE_TEST_URL=postgresql://postgres:postgres@api-db:5432/api_test
+    depends_on:
+      - api-db
 
   # db service
   api-db:
