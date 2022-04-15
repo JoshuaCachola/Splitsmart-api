@@ -1,8 +1,6 @@
 python-dotenv
 alembic
 psycopg2-binary
-awscli
-boto3
 graphene-sqlalchemy==2.3.0
 graphene==2.1.9
 Flask
@@ -13,3 +11,4 @@ Flask-Cors
 PyJWT
 flask-graphql==2.0.1
 flask-jwt-extended
+flask_restx

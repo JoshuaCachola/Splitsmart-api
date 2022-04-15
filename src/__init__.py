@@ -1,29 +1,49 @@
-from flask import Flask
-from flask_graphql import GraphQLView
-from flask_migrate import Migrate
-from flask_cors import CORS
-from flask_jwt_extended import JWTManager
 import os
 
-from .config import Config
+from flask import Flask
+from flask_graphql import GraphQLView
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager
+
 from .models import db
-from .schema import schema  # noqa
+
+# instantiate extensions
+jwt_manager = JWTManager()
 
 
-app = Flask(__name__)
-app.config.from_object(Config)
-app.config['JWT_SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['JWT_IDENTITY_CLAIM'] = 'jti'
-cors = CORS(app, resources={r'/*': {'origin': '*'}})
-jwt = JWTManager(app)
-app.debug = True
+def create_app(script_info=None):
+    # instantiate app
+    app = Flask(__name__)
 
-# adds /graphql endpoint
-app.add_url_rule(
-    '/graphql',
-    view_func=GraphQLView.as_view('graphql', schema=schema, graphiql=True)
+    # set config
+    app_settings = os.getenv('APP_SETTINGS')
+    app.config.from_object(app_settings)
 
-)
+    # register extensions
+    db.init_app(app)
+    # bcrypt.init_app(app)
+    jwt_manager.init_app(app)
 
-db.init_app(app)
-Migrate(app, db)
+    # import blueprints
+    from src.api.ping import ping_blueprint
+
+    # register blueprints
+    app.register_blueprint(ping_blueprint)
+
+    # import schema
+    from src.schema import schema    
+
+    # adds /graphql endpoint
+    app.add_url_rule(
+        '/graphql',
+        view_func=GraphQLView.as_view('graphql', schema=schema, graphiql=True)
+
+    )
+
+    # shell context for flask cli
+    @app.shell_context_processor
+    def ctx():
+        return {'app': app, 'db': db}
+
+    return app
+

@@ -10,11 +10,11 @@ ENV PYTHONUNBUFFERED 1
 
 # install dependencies
 RUN apt-get update \
-    && apt-get -y netcat gcc postgresql \
+    && apt-get -y install netcat gcc postgresql \
     && apt-get clean
 
 # copy and install dependencies
-COPY . /requirements.txt
+COPY ./requirements.txt .
 RUN pip install -r requirements.txt
 
 # copy app to pwd
