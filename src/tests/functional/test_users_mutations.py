@@ -32,3 +32,29 @@ def test_register_user():
     }
     executed = client.execute(mut_str, variable_values=variables)
     assert "data" in executed
+
+
+def test_login_user():
+    """
+    Tests logging in a user
+    """
+    client = Client(schema)
+    mut_str = """
+        mutation loginUser(
+            $email: String!, $password: String!
+        ) {
+            loginUser(email: $email, password: $password) {
+                user {
+                    id
+                }
+                authToken
+            }
+        }
+    """
+    variables = {
+        "email": "test@user.com",
+        "password": "test_password"
+    }
+    executed = client.execute(mut_str, variable_values=variables)
+    assert "data" in executed
+
