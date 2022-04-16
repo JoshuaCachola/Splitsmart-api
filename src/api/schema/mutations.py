@@ -1,5 +1,4 @@
 import graphene
-from decimal import Decimal
 from flask_jwt_extended import create_access_token
 
 # import object types
@@ -7,7 +6,7 @@ from .types import User, Expense
 
 # import crud functions
 from src.api.users.crud import register_user, get_user_by_email, login_user
-from src.api.expense.crud import create_expense
+from src.api.expenses.crud import create_expense
 
 
 class RegisterUser(graphene.Mutation):
@@ -25,11 +24,11 @@ class RegisterUser(graphene.Mutation):
 
     def mutate(self, info, first_name, last_name, email, password):
         """
-        :type first_name: string
-        :type last_name: string
-        :type email: string
-        :type password: string
-        :rtype: { user, auth_token }
+        first_name: string
+        last_name: string
+        email: string
+        password: string
+        rtype: RegisterUser
         """
         check_email = get_user_by_email(email)
         if (not check_email):
@@ -48,13 +47,15 @@ class RegisterUser(graphene.Mutation):
 
 class LoginUser(graphene.Mutation):
     """
-    Mutation class to authenticate user and create authorization token 
+    Mutation class to authenticate user and create authorization token
     """
     auth_token = graphene.String()
     user = graphene.Field(lambda: User)
+
     class Arguments:
         email = graphene.String(required=True)
         password = graphene.String(required=True)
+
     def mutate(self, info, email, password):
         """
         email: string
@@ -77,23 +78,45 @@ class LoginUser(graphene.Mutation):
 
 class CreateExpense(graphene.Mutation):
     """
-    Mutation class for users to create expenses
+    Mutation class for users to create expenses and track transactions
     """
     expense = graphene.Field(lambda: Expense)
 
     class Arguments:
         user_id = graphene.ID(required=True)
-        amount = graphene.Decimal(required=True)
+        total = graphene.Decimal(required=True)
         description = graphene.String(required=True)
+        transactions = graphene.JSONString(required=True)
 
-    # @jwt_required
-    def mutate(self, info, user_id, amount, description):
+    def mutate(self, info, user_id, total, description, transactions):
         """
-        :type user_id: ID
-        :type amount: Decimal
-        :type description: string
-        :rtype: CreateExpense
+        user_id: ID
+        total: Decimal
+        description: string
+        json_input: JSONString
+        rtype: CreateExpense
         """
-        expense = create_expense(user_id, amount, description)
+        expense = create_expense(user_id, total, description, transactions)
         return CreateExpense(expense=expense)
-  
+
+
+# class HandleTransaction(graphene.Mutation):
+    # """
+    # Mutation class to handle paying a transaction
+    # """
+    # transaction = graphene.Field(lambda: Transaction)
+
+    # class Arguments:
+        # id = graphene.Int(required=True)
+
+    # def mutate(self, info, id):
+        # """
+        # :type id: int
+        # :rtype: obj
+        # """
+        # transaction = TransactionModel.query.filter_by(id=id).first()
+        # transaction.paid_on = datetime.datetime.now()
+        # transaction.updated_at = datetime.datetime.now()
+        # transaction.is_settled = True
+        # db.session.commit()
+        # return HandleTransaction(transaction=transaction)

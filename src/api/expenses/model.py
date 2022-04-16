@@ -1,6 +1,6 @@
 import datetime
-from decimal import Decimal
 
+from decimal import Decimal
 from src import db
 
 
@@ -11,7 +11,7 @@ class Expense(db.Model):
     __tablename__ = 'expenses'
 
     id = db.Column(db.Integer, primary_key=True)
-    amount = db.Column(db.Numeric(asdecimal=True), nullable=False)
+    total = db.Column(db.Numeric(), nullable=False)
     description = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False)
     is_fully_settled = db.Column(db.Boolean, nullable=False)
@@ -22,9 +22,9 @@ class Expense(db.Model):
     transaction = db.relationship('Transaction', back_populates='expense')
     comment = db.relationship('Comment', back_populates='expense')
 
-    def __init__(self, user_id, amount, description):
+    def __init__(self, user_id, total, description):
         self.description = description
-        self.amount = amount
+        self.total = Decimal(total)
         self.is_fully_settled = False
         self.created_at = datetime.datetime.now()
         self.user_id = user_id
@@ -32,4 +32,3 @@ class Expense(db.Model):
 
     def __repr__(self):
         return f'<Expense {self.id}>'
-    

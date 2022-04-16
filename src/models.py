@@ -32,32 +32,6 @@ class Friendship(db.Model):
         self.updated_at = datetime.datetime.now()
 
 
-class Transaction(db.Model):
-    """
-    Class for Transactions table
-    """
-    __tablename__ = 'transactions'
-
-    id = db.Column(db.Integer, primary_key=True)
-    amount = db.Column(db.Float, nullable=False)
-    paid_on = db.Column(db.DateTime)
-    is_settled = db.Column(db.Boolean)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    expense_id = db.Column(db.Integer, db.ForeignKey(
-        'expenses.id'), nullable=False)
-    updated_at = db.Column(db.DateTime)
-
-    user = db.relationship('User', back_populates='transaction')
-    expense = db.relationship('Expense', back_populates='transaction')
-
-    def __init__(self, amount, user_id, expense_id):
-        self.amount = amount
-        self.user_id = user_id
-        self.expense_id = expense_id
-        self.is_settled = False
-        self.updated_at = datetime.datetime.now()
-
-
 class Comment(db.Model):
     """
     Class for Comment table

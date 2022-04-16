@@ -18,7 +18,6 @@ def register_user(first_name, last_name, email, password):
         email=email,
         password=password
     )
-    
     db.session.add(user)
     db.session.commit()
     return user
