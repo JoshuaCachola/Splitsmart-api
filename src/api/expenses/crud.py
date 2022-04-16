@@ -16,7 +16,7 @@ def create_expense(user_id, total, description, transactions):
             db.session.commit()
     except SQLAlchemyError as e:
         error = str(e.orig)
-        db.rollback()
+        db.session.rollback()
         return error
 
     return expense

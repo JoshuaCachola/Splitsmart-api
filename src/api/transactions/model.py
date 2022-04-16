@@ -27,7 +27,6 @@ class Transaction(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     expense_id = db.Column(db.Integer, db.ForeignKey(
         'expenses.id'), nullable=False)
-    create_at = db.Column(db.DateTime)
     updated_at = db.Column(db.DateTime)
 
     user = db.relationship('User', back_populates='transaction')
@@ -38,7 +37,6 @@ class Transaction(db.Model):
         self.user_id = user_id
         self.expense_id = expense_id
         self.payment_status = PaymentStatus.PENDING
-        self.create_at = datetime.datetime.now()
         self.update_at = datetime.datetime.now()
 
     def __repr__(self):
