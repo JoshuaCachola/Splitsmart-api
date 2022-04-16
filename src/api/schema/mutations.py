@@ -2,11 +2,12 @@ import graphene
 from flask_jwt_extended import create_access_token
 
 # import object types
-from .types import User, Expense
+from .types import User, Expense, Transaction, PaymentStatus
 
 # import crud functions
 from src.api.users.crud import register_user, get_user_by_email, login_user
 from src.api.expenses.crud import create_expense
+from src.api.transactions.crud import update_transaction
 
 
 class RegisterUser(graphene.Mutation):
@@ -100,23 +101,34 @@ class CreateExpense(graphene.Mutation):
         return CreateExpense(expense=expense)
 
 
-# class HandleTransaction(graphene.Mutation):
-    # """
-    # Mutation class to handle paying a transaction
-    # """
-    # transaction = graphene.Field(lambda: Transaction)
+class UpdateTransaction(graphene.Mutation):
+    """
+    Mutation class to update paying a transaction
+    """
+    transaction = graphene.Field(lambda: Transaction)
+    error = graphene.String()
 
-    # class Arguments:
-        # id = graphene.Int(required=True)
+    class Arguments:
+        id = graphene.Int(required=True)
+        status = graphene.Enum(PaymentStatus)
 
-    # def mutate(self, info, id):
-        # """
-        # :type id: int
-        # :rtype: obj
-        # """
-        # transaction = TransactionModel.query.filter_by(id=id).first()
-        # transaction.paid_on = datetime.datetime.now()
-        # transaction.updated_at = datetime.datetime.now()
-        # transaction.is_settled = True
-        # db.session.commit()
-        # return HandleTransaction(transaction=transaction)
+    def mutate(self, info, id, status):
+        """
+        :type id: int
+        :rtype: obj
+        """
+        transaction = update_transaction(id, status)
+
+        if transaction:
+            return UpdateTransaction(
+                transaction=transaction,
+                error=""
+            )
+        return UpdateTransaction(
+                transaction=None,
+                error='''
+                Error handling transaction. Charges have not taken place.
+                Please try again.
+
+                '''
+        )

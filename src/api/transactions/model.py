@@ -10,8 +10,6 @@ class PaymentStatus(Enum):
     PENDING = 'pending'
     SETTLED = 'settled'
     CANCELLED = 'cancelled'
-    FAILED = 'failed'
-    EXPIRED = 'expired'
 
 
 class Transaction(db.Model):

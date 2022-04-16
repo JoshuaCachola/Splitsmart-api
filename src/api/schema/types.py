@@ -11,8 +11,6 @@ class PaymentStatus:
     PENDING = 'pending'
     SETTLED = 'settled'
     CANCELLED = 'cancelled'
-    FAILED = 'failed'
-    EXPIRED = 'expired'
 
 
 class User(SQLAlchemyObjectType):
