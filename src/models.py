@@ -1,43 +1,7 @@
-
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_sqlalchemy import SQLAlchemy
 import datetime
 
-
-db = SQLAlchemy()
-
-
-class User(db.Model):
-    """
-    Class for Users Table
-    """
-    __tablename__ = 'users'
-
-    id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(20), nullable=False)
-    last_name = db.Column(db.String(20), nullable=False)
-    email = db.Column(db.String(50), unique=True, nullable=False)
-    hashed_pw = db.Column(db.String(255), nullable=False)
-    avatar = db.Column(db.String(255))
-    registered_on = db.Column(db.DateTime, nullable=False)
-    expense = db.relationship('Expense', back_populates='user')
-    transaction = db.relationship('Transaction', back_populates='user')
-    comment = db.relationship('Comment', back_populates='user')
-
-    def __init__(self, first_name, last_name, email, password):
-        self.first_name = first_name
-        self.last_name = last_name
-        self.email = email
-        self.hashed_pw = generate_password_hash(password, 'sha256')
-        self.registered_on = datetime.datetime.now()
-
-    def to_dict(self):
-        return {
-            'id': self.id
-        }
-
-    def check_password(self, password):
-        return check_password_hash(self.hashed_pw, password)
+from flask_sqlalchemy import SQLAlchemy
+from src import bcrypt, db
 
 
 class Friendship(db.Model):
@@ -66,58 +30,6 @@ class Friendship(db.Model):
         self.friend2_id = friend2_id
         self.status = 'pending'
         self.updated_at = datetime.datetime.now()
-
-
-class Expense(db.Model):
-    """
-    Class for Expenses Table
-    """
-    __tablename__ = 'expenses'
-
-    id = db.Column(db.Integer, primary_key=True)
-    amount = db.Column(db.Float, nullable=False)
-    description = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, nullable=False)
-    is_settled = db.Column(db.Boolean, nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    updated_at = db.Column(db.DateTime)
-
-    user = db.relationship('User', back_populates='expense')
-    transaction = db.relationship('Transaction', back_populates='expense')
-    comment = db.relationship('Comment', back_populates='expense')
-
-    def __init__(self, description, amount, user_id):
-        self.description = description
-        self.amount = amount
-        self.created_at = datetime.datetime.now()
-        self.is_settled = False
-        self.user_id = user_id
-        self.updated_at = datetime.datetime.now()
-
-
-# class Group(db.Model):
-#     """
-#     Class for Groups Table
-#     """
-#     __tablename__ = 'groups'
-
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(50), nullable=False)
-#     image = db.Column(db.String(255))
-
-#     group_users = db.relationship('GroupUsers', backref='groups')
-
-
-# class GroupUsers(db.Model):
-#     """
-#     Class for Group Users Join Table
-#     """
-#     __tablename__ = 'group_users'
-
-#     id = db.Column(db.Integer, primary_key=True)
-#     group_id = db.Column(db.Integer, db.ForeignKey(
-#         'groups.id'), nullable=False)
-#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
 
 class Transaction(db.Model):

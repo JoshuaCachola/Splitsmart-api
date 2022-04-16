@@ -1,24 +1,24 @@
 import graphene
+import datetime
+
 from graphene_sqlalchemy import SQLAlchemyObjectType
-from .models import (
-    db, User as UserModel, Expense as ExpenseModel, Friendship as FriendshipModel,
+from .models import (Friendship as FriendshipModel,
     Transaction as TransactionModel, Comment as CommentModel)
 from flask_jwt_extended import create_access_token, jwt_required
-import datetime
+from graphene import relay
+
+# import object types
+from src.api.schema.types import User, Expense
+
+# import models
+from src.api.users.model import User as UserModel
+from src.api.expense.model import Expense as ExpenseModel
+
+# import mutations
+from src.api.schema.mutations import RegisterUser, CreateExpense, LoginUser
 
 
 # Schema
-class User(SQLAlchemyObjectType):
-    class Meta:
-        model = UserModel
-        # interfaces = (relay.Node, )
-
-
-class Expense(SQLAlchemyObjectType):
-    class Meta:
-        model = ExpenseModel
-
-
 # class Group(SQLAlchemyObjectType):
 #     class Meta:
 #         model = GroupModel
@@ -45,89 +45,6 @@ class RecentActivity(graphene.Union):
 
 
 # Mutations
-class CreateUser(graphene.Mutation):
-    """
-    Mutation class for users to sign up
-    """
-    auth_token = graphene.String()
-    user = graphene.Field(lambda: User)
-
-    class Arguments:
-        first_name = graphene.String(required=True)
-        last_name = graphene.String(required=True)
-        email = graphene.String(required=True)
-        password = graphene.String(required=True)
-
-    def mutate(self, info, first_name, last_name, email, password):
-        """
-        :type first_name: string
-        :type last_name: string
-        :type email: string
-        :type password: string
-        :rtype: object
-        """
-        check_email = UserModel.query.filter_by(email=email).first()
-        if (not check_email):
-            user = UserModel(
-                first_name=first_name,
-                last_name=last_name,
-                email=email,
-                password=password
-            )
-            db.session.add(user)
-            db.session.commit()
-            auth_token = create_access_token(user.id)
-            return CreateUser(
-                user=user,
-                auth_token=auth_token
-            )
-        else:
-            return CreateUser(
-                user=None,
-                auth_token=None
-            )
-
-
-class LoginUser(graphene.Mutation):
-    """
-    Mutation class to authenticate user and pass frontend JWT token
-    """
-    id = graphene.Int()
-    auth_token = graphene.String()
-    # refresh_token = graphene.String()
-    first_name = graphene.String()
-    last_name = graphene.String()
-
-    class Arguments:
-        email = graphene.String(required=True)
-        password = graphene.String(required=True)
-
-    # @classmethod
-    # @login.user_loader
-    def mutate(self, info, email, password):
-        """
-        :type email: string
-        :type password: string
-        :rtype: object
-        """
-        user = UserModel.query.filter_by(email=email).first()
-        if user:
-            auth_token = create_access_token(user.id)
-            return LoginUser(
-                id=user.id,
-                auth_token=auth_token,
-                first_name=user.first_name,
-                last_name=user.last_name,
-                # refresh_token=refresh_token
-            )
-        else:
-            return LoginUser(
-                id=None,
-                auth_token=None,
-                first_name=None,
-                last_name=None,
-                # refresh_token=None
-            )
 
 
 # class CreateGroup(graphene.Mutation):
@@ -175,35 +92,6 @@ class FriendshipRequest(graphene.Mutation):
         return FriendshipRequest(
             friendship_status=friendship_request.status,
         )
-
-
-class CreateExpense(graphene.Mutation):
-    """
-    Mutation class for users to create expenses
-    """
-    expense = graphene.Field(lambda: Expense)
-
-    class Arguments:
-        user_id = graphene.Int(required=True)
-        amount = graphene.Float(required=True)
-        description = graphene.String(required=True)
-
-    @jwt_required
-    def mutate(self, info, user_id, amount, description):
-        """
-        :type user_id: int
-        :type amount: float
-        :type description: string
-        :rtype: obj
-        """
-        expense = ExpenseModel(
-            user_id=user_id,
-            amount=amount,
-            description=description
-        )
-        db.session.add(expense)
-        db.session.commit()
-        return CreateExpense(expense=expense)
 
 
 class CreateTransaction(graphene.Mutation):
@@ -330,10 +218,7 @@ class Query(graphene.ObjectType):
     def resolve_user(self, info, email):
         user_query = User.get_query(info)
         user = user_query.filter(UserModel.email == email).first()
-        if user:
-            return user
-        else:
-            return None
+        return user if user else None
 
     @jwt_required
     def resolve_get_friends(self, info, friend_id):
@@ -396,7 +281,7 @@ class Query(graphene.ObjectType):
 
 
 class Mutation(graphene.ObjectType):
-    create_user = CreateUser.Field()
+    register_user = RegisterUser.Field()
     login_user = LoginUser.Field()
     create_expense = CreateExpense.Field()
     # create_group = CreateGroup.Field()

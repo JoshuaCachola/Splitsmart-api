@@ -4,11 +4,14 @@ from flask import Flask
 from flask_graphql import GraphQLView
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from flask_bcrypt import Bcrypt
+from flask_sqlalchemy import SQLAlchemy
 
-from .models import db
 
 # instantiate extensions
 jwt_manager = JWTManager()
+bcrypt = Bcrypt()
+db = SQLAlchemy()
 
 
 def create_app(script_info=None):
@@ -21,7 +24,7 @@ def create_app(script_info=None):
 
     # register extensions
     db.init_app(app)
-    # bcrypt.init_app(app)
+    bcrypt.init_app(app)
     jwt_manager.init_app(app)
 
     # import blueprints

@@ -1,3 +1,4 @@
+flask-bcrypt==1.0.1
 python-dotenv
 psycopg2-binary
 graphene-sqlalchemy==2.3.0

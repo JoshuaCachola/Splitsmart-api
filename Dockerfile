@@ -1,8 +1,13 @@
 # pull python image for container
 FROM python:3.10.1-slim-buster
 
+# create directories
+#RUN mkdir -p /usr/src/app
+
 # set directory for application
 WORKDIR /usr/src/app
+
+
 
 # set environmental variables
 ENV PYTHONDONTWRITEBYTECODE 1

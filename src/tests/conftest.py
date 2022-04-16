@@ -15,7 +15,7 @@ def test_app():
 
 
 @pytest.fixture(scope='module')
-def test_client():
+def test_database():
     db.create_all()
     yield db # testing happens here
 

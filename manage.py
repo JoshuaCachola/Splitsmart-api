@@ -1,5 +1,6 @@
 from flask.cli import FlaskGroup
 from src import create_app, db
+from src.api.users.model import User
 
 
 app = create_app()

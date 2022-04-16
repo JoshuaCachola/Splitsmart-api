@@ -13,6 +13,7 @@ services:
     ports:
       - 5004:5000
     environment:
+      - SECRET_KEY=my_precious
       - FLASK_ENV=development
       - APP_SETTINGS=src.config.DevelopmentConfig
       - DATABASE_URL=postgresql://postgres:postgres@api-db:5432/api_dev
